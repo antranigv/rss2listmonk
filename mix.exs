@@ -33,7 +33,7 @@ defmodule Rss2listmonk.MixProject do
       {:poison, "~> 5.0"},
       {:quinn, "~> 1.1"},
       {:date_time_parser, "~> 1.1.5"},
-      {:tzdata, "~> 0.1", override: true},
+      {:tzdata, "~> 0.1.8", override: true},
       {:html_entities, "~> 0.5.2"},
     ]
   end
