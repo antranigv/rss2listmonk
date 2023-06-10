@@ -12,11 +12,13 @@ defmodule Rss2listmonk.CLI do
         --password listmonk_pass
         --template id
         --lists 2,4,5
-        [ --subject "Awesome blog ${date}" ]
+        [ --subject "Awesome blog: $(date)" ]
         [ --from 'Awesome Blogger <newsletter@example.com>' ]
         [ --reply-to 'John Smithian <john@example.com>' ]
         [ --range 24H ]
         [ --lang en_US ]
+        [ --debug ]
+        [ --send-later]
       """
     )
     System.stop(1)
@@ -33,6 +35,7 @@ defmodule Rss2listmonk.CLI do
 
   defp start(parsed_args) do
     %{
+      debug: debug,
       feed: feed,
       from: from,
       lang: lang,
@@ -41,6 +44,7 @@ defmodule Rss2listmonk.CLI do
       password: password,
       range: range,
       reply_to: reply_to,
+      send_later: send_later,
       subject: subject,
       template: template_id,
       user: user,
@@ -101,22 +105,28 @@ defmodule Rss2listmonk.CLI do
         })
 
         headers = [{"Content-type", "application/json"}]
-        {:ok, resp} = HTTPoison.post(listmonk <> "/api/campaigns", body, headers, hackney: [basic_auth: {user, password}])
+        if debug do
+          IO.inspect(body)
+        else
+          {:ok, resp} = HTTPoison.post(listmonk <> "/api/campaigns", body, headers, hackney: [basic_auth: {user, password}])
 
-        id =
-          resp
-          |> Map.get(:body)
-          |> Poison.decode!
-          |> Map.get("data")
-          |> Map.get("id")
+          id =
+            resp
+            |> Map.get(:body)
+            |> Poison.decode!
+            |> Map.get("data")
+            |> Map.get("id")
 
-        {:ok, _} =
-          HTTPoison.put(
-            listmonk <> "/api/campaigns/#{id}/status",
-            Poison.encode!(%{status: "running"}),
-            headers,
-            hackney: [basic_auth: {user, password}]
-          )
+          unless send_later do
+          {:ok, _} =
+            HTTPoison.put(
+              listmonk <> "/api/campaigns/#{id}/status",
+              Poison.encode!(%{status: "running"}),
+              headers,
+              hackney: [basic_auth: {user, password}]
+            )
+        end
+        end
     end
   end
 
@@ -125,17 +135,19 @@ defmodule Rss2listmonk.CLI do
       OptionParser.parse(
         args,
         strict: [
-          feed:     :string,
-          from:     :string,
-          lang:     :string,
-          listmonk: :string,
-          lists:    :string,
-          password: :string,
-          range:    :string,
-          reply_to: :string,
-          subject:  :string,
-          template: :integer,
-          user:     :string,
+          debug:      :boolean,
+          feed:       :string,
+          from:       :string,
+          lang:       :string,
+          listmonk:   :string,
+          lists:      :string,
+          password:   :string,
+          range:      :string,
+          reply_to:   :string,
+          send_later: :boolean,
+          subject:    :string,
+          template:   :integer,
+          user:       :string,
         ])
 
     parsed_keys = Keyword.keys(parsed)
@@ -148,11 +160,13 @@ defmodule Rss2listmonk.CLI do
          true <-  :user     in parsed_keys
     do
       :ok
-      parsed = unless :reply_to in parsed_keys, do: Keyword.put(parsed, :reply_to,  nil),               else: parsed
-      parsed = unless :from     in parsed_keys, do: Keyword.put(parsed, :from,      nil),               else: parsed
-      parsed = unless :lang     in parsed_keys, do: Keyword.put(parsed, :lang,      "en_US"),           else: parsed
-      parsed = unless :range    in parsed_keys, do: Keyword.put(parsed, :range,     "24H"),             else: parsed
-      parsed = unless :subject  in parsed_keys, do: Keyword.put(parsed, :subject,   "%title: %date"),   else: parsed
+      parsed = unless :debug       in parsed_keys, do: Keyword.put(parsed, :debug,      false),           else: parsed
+      parsed = unless :reply_to    in parsed_keys, do: Keyword.put(parsed, :reply_to,   nil),             else: parsed
+      parsed = unless :from        in parsed_keys, do: Keyword.put(parsed, :from,       nil),             else: parsed
+      parsed = unless :lang        in parsed_keys, do: Keyword.put(parsed, :lang,       "en_US"),         else: parsed
+      parsed = unless :range       in parsed_keys, do: Keyword.put(parsed, :range,      "24H"),           else: parsed
+      parsed = unless :send_later  in parsed_keys, do: Keyword.put(parsed, :send_later, false),           else: parsed
+      parsed = unless :subject     in parsed_keys, do: Keyword.put(parsed, :subject,    "%title: %date"), else: parsed
       {:ok, Enum.into(parsed, %{})}
     else
       false ->
