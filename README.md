@@ -20,7 +20,7 @@ The idea is simple
 
 Here are some easy steps to install `rss2listmonk`
 
-```console
+```shell
 git clone https://github.com/antranigv/rss2listmonk # Checkout the repo
 mix deps.get # Get the dependencies
 mix deps.compile # Compile the dependencies
@@ -32,7 +32,7 @@ mix escript.build # Build an escript
 
 By default, the escript will go into the `_build` directory.
 
-```console
+```
 $ cd _build
 $ ./rss2listmonk
 usage: ./rss2listmonk
@@ -65,12 +65,12 @@ usage: ./rss2listmonk
 | reply-to (optional) |     adds a `reply-to` email header, defaults to nothing      |         'John Smithian \<john@example.com\>`         |
 |  range (optional)   |      range of the data to fetch from the feed, in hours      |                         72H                          |
 |   lang (optional)   | This is used as a `LANG` environment variable for `date(1)` inside the title |                        hy_AM                         |
-| debug \| send-later | debug will display the API call, but not send it.<br />send-later will send the API call, but not run the campaign |                                                      |
+| `debug` \| `send-later` | `debug` will display the API call, but not send it.<br />`send-later` will send the API call, but not run the campaign |                                                      |
 
 ### Example
 
-```console
-./rss2listmonk
+```
+$ ./rss2listmonk
 	--feed https://weblog.antranigv.am/feed/
 	--listmonk http://newsletter.bsd.am
 	--user admin
