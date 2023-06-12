@@ -17,6 +17,7 @@ defmodule Rss2listmonk.CLI do
         [ --reply-to 'John Smithian <john@example.com>' ]
         [ --range 24H ]
         [ --lang en_US ]
+        [ --chron ]
         [ --debug ]
         [ --send-later]
       """
@@ -35,6 +36,7 @@ defmodule Rss2listmonk.CLI do
 
   defp start(parsed_args) do
     %{
+      chron: chron,
       debug: debug,
       feed: feed,
       from: from,
@@ -86,6 +88,7 @@ defmodule Rss2listmonk.CLI do
       |> get_data
       |> filter_ranged(range_int)
       |> Enum.map(fn item -> item_to_markdown(item) end)
+      |> reverse?(chron)
       |> Enum.join("\n---\n")
 
     case message_body do
@@ -135,6 +138,7 @@ defmodule Rss2listmonk.CLI do
       OptionParser.parse(
         args,
         strict: [
+          chron:      :boolean,
           debug:      :boolean,
           feed:       :string,
           from:       :string,
@@ -160,6 +164,7 @@ defmodule Rss2listmonk.CLI do
          true <-  :user     in parsed_keys
     do
       :ok
+      parsed = unless :chron       in parsed_keys, do: Keyword.put(parsed, :chron,      false),           else: parsed
       parsed = unless :debug       in parsed_keys, do: Keyword.put(parsed, :debug,      false),           else: parsed
       parsed = unless :reply_to    in parsed_keys, do: Keyword.put(parsed, :reply_to,   nil),             else: parsed
       parsed = unless :from        in parsed_keys, do: Keyword.put(parsed, :from,       nil),             else: parsed
@@ -240,5 +245,13 @@ defmodule Rss2listmonk.CLI do
     ## [#{title}](#{item.href})
     #{item.description}
     """
+  end
+
+  defp reverse?(data, true) do
+    Enum.reverse(data)
+  end
+
+  defp reverse?(data, false) do
+    data
   end
 end
